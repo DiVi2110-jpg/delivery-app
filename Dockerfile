@@ -3,7 +3,7 @@ FROM php:8.3-cli-bookworm AS vendor
 
 WORKDIR /app
 
-# System deps for intl + zip (and git/unzip for composer downloads)
+# System deps for intl + zip
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git unzip ca-certificates \
     libicu-dev zlib1g-dev libzip-dev \
@@ -15,10 +15,10 @@ RUN docker-php-ext-install -j$(nproc) intl zip
 # Install Composer (from official image)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy only composer files first (cache-friendly)
+# Copy composer files and install deps
 COPY composer.json composer.lock ./
 
-# IMPORTANT: no-scripts so it doesn't try to run "php artisan ..."
+# IMPORTANT: --no-scripts (so it won't try to run "php artisan ...")
 RUN composer install \
     --no-dev \
     --prefer-dist \
@@ -30,7 +30,7 @@ RUN composer install \
 # ---------- Runtime stage: PHP 8.3 FPM + Nginx ----------
 FROM php:8.3-fpm-bookworm
 
-# System packages for nginx/supervisor and PHP extensions build
+# System packages for nginx/supervisor and building PHP extensions (curl needs libcurl dev + pkg-config)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx supervisor \
     pkg-config \
@@ -47,7 +47,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 
 WORKDIR /var/www/html
 
-# Copy app source (now artisan exists here)
+# Copy app source (artisan is here)
 COPY . /var/www/html
 
 # Copy vendor from build stage
@@ -63,5 +63,4 @@ RUN chown -R www-data:www-data /var/www/html \
  && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
-
 CMD ["/usr/bin/supervisord", "-n"]
