@@ -1,29 +1,40 @@
-# ---------- Build stage: install Composer deps with PHP 8.3 ----------
-FROM composer:2 AS vendor
+# ---------- Build stage: PHP 8.3 CLI + required extensions for Composer ----------
+FROM php:8.3-cli-bookworm AS vendor
 
 WORKDIR /app
 
-# Copy only composer files first (better cache)
-COPY composer.json composer.lock ./
+# System deps for intl + zip
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git unzip ca-certificates \
+    libicu-dev zlib1g-dev libzip-dev \
+ && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies (prod only) into /app/vendor
+# PHP extensions needed by your Composer deps
+RUN docker-php-ext-install -j$(nproc) intl zip
+
+# Install Composer (copy from official composer image)
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy composer files and install deps
+COPY composer.json composer.lock ./
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
-# ---------- Runtime stage: PHP 8.3 + Nginx ----------
+# ---------- Runtime stage: PHP 8.3 FPM + Nginx ----------
 FROM php:8.3-fpm-bookworm
 
-# Install system packages: nginx + supervisor + required libs
+# Install system packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx supervisor git unzip ca-certificates \
-    libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    nginx supervisor \
+    libicu-dev libzip-dev \
+    libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
     libonig-dev libxml2-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# PHP extensions commonly needed by Laravel
+# PHP extensions for Laravel
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install -j$(nproc) pdo pdo_mysql mbstring xml curl zip gd opcache
+ && docker-php-ext-install -j$(nproc) \
+    pdo pdo_mysql mbstring xml curl zip gd opcache intl
 
-# App directory
 WORKDIR /var/www/html
 
 # Copy app source
@@ -36,7 +47,7 @@ COPY --from=vendor /app/vendor /var/www/html/vendor
 COPY .render/nginx.conf /etc/nginx/sites-available/default
 COPY .render/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Permissions for Laravel writable dirs
+# Permissions
 RUN chown -R www-data:www-data /var/www/html \
  && mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
  && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
