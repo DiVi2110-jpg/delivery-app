@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx supervisor \
     pkg-config \
     libcurl4-openssl-dev \
+    libpq-dev \
     libicu-dev libzip-dev \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
     libonig-dev libxml2-dev \
@@ -43,7 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # PHP extensions for Laravel
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
  && docker-php-ext-install -j$(nproc) \
-    pdo pdo_mysql mbstring xml curl zip gd opcache intl
+    pdo pdo_mysql pdo_pgsql mbstring xml curl zip gd opcache intl
 
 WORKDIR /var/www/html
 
