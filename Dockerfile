@@ -50,6 +50,7 @@ WORKDIR /var/www/html
 
 # Copy app source (artisan is here)
 COPY . /var/www/html
+    RUN rm -f /var/www/html/bootstrap/cache/*.php
 
 # Copy vendor from build stage
 COPY --from=vendor /app/vendor /var/www/html/vendor
