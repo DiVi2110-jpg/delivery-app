@@ -6,12 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void
-    {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->timestamp('seen_at')->nullable()->after('status');
-            $table->index('seen_at');
-        });
-    }
+{
+    // колонка уже создана предыдущей миграцией
+}
 
     public function down(): void
     {

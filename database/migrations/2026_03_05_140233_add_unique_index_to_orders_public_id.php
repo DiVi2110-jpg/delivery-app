@@ -5,17 +5,15 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
+
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->unique('public_id');
-        });
+        // индекс уже существует в базе Render
     }
 
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropUnique(['public_id']);
-        });
+        // ничего не откатываем
     }
+
 };
