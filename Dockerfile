@@ -65,6 +65,7 @@ COPY --from=frontend /app/public/build /var/www/html/public/build
 
 COPY .render/nginx.conf /etc/nginx/sites-available/default
 COPY .render/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY .render/start.sh /usr/local/bin/start.sh
 
 RUN mkdir -p \
     /var/www/html/storage/framework/cache \
@@ -73,7 +74,8 @@ RUN mkdir -p \
     /var/www/html/storage/logs \
     /var/www/html/bootstrap/cache \
  && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
- && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+ && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
+ && chmod +x /usr/local/bin/start.sh
 
 EXPOSE 80
-CMD ["/usr/bin/supervisord", "-n"]
+CMD ["/usr/local/bin/start.sh"]
